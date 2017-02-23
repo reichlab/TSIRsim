@@ -1,0 +1,31 @@
+model {
+
+  ### confirmed model
+  p_test ~ dunif(0.001, 0.10) # prob. of getting tested
+  sens ~ dunif(0.85, 0.99)
+  for (t in 1:T) {
+    obs.conf.zikv[t] ~ dbinom(p_test * sens * p_Z[t], pop)
+  }
+    
+  ### TSIR model
+  alpha ~ dgamma(0.001, 0.001)
+  beta ~ dgamma(0.001, 0.001)
+  r ~ dgamma(0.001, 0.001)
+  p_Z_init ~ dgamma(0.001, 0.001)
+  Z_init ~ dpois(p_Z_init)
+  
+  p_Z[1] = Z[1]/pop
+  lambda[1] = beta * Z_init^alpha * S[1] / pop
+  p[1] = r / (r + lambda[1])
+  S[1] = pop - Z_init
+  Z[1] ~ dnegbin(p[1], r)
+  for (t in 2:T) {
+    p_Z[t] = Z[t]/pop
+    lambda[t] = beta * Z[t-1] * S[t] / pop
+    p[t] = r / (r + lambda[t])
+    S[t] = S[t-1] - Z[t-1]
+    Z[t] ~ dnegbin(p[t], r)
+  }
+  
+}
+

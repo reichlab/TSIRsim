@@ -1,0 +1,12 @@
+Package: TSIRsim
+Title: Simulating TSIR models
+Version: 0.0.1
+Authors@R: c(
+    person(c("Nicholas", "G."), "Reich", , "nick@umass.edu", role = c("aut", "cre")), 
+    person(c("Michael", "A."), "Johansson", , "eyq9@cdc.gov", role = c("aut"))
+    )
+Description: Code for simulating TSIR models.
+Depends:
+License: GPLv3
+LazyData: true
+RoxygenNote: 5.0.1

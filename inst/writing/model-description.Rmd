@@ -1,0 +1,82 @@
+---
+title: "Model formulations"
+author: "Nicholas Reich"
+date: "February 21, 2017"
+output: pdf_document
+---
+
+```{r, eval=FALSE}
+devtools::install_github('cdcepi/tsir-sims')
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(TSIRsim)
+```
+
+## Some notation
+
+Let $Y_t$ be an observed case count at time $t$ from a latent, unobserved process $Z_t$. Also, let the population be $N_t$. 
+
+Several processes govern how $Z$ is observed. Specifically, we assume that $\pi^{T|Z}$ is the probability of getting tested given that you have disease and $Se$ is the sensitivity of the test (i.e. the probability that the test will be positive given that you have the disease). Also, if $\pi^Z_t$ is the probability at time $t$ of having the disease, then a simple observation model is:
+$$Y_t \sim Binom(\pi^Z_t \cdot \pi^{T|Z} \cdot Se, N_t)$$
+
+We can also use a simple model for the disease process. E.g. 
+$$ Z_t \sim NB(\frac{r}{r+\lambda_t}, r) $$
+where the mean of the negative binomial is then $\lambda_t$.
+Also, 
+$$ \lambda_t = \beta \cdot Z_{t-1} \cdot S_t / N_t $$
+and
+$$ S_t = S_{t-1} - Z_{t-1}. $$
+Further, $Z_0$ is an estimated parameter, with $S_1 := N_t-Z_0$.
+
+## A simple simulation
+
+```{r}
+tsir_sim <- function(beta, r, N, nsteps=104, plot=TRUE) {
+    Z_0 <- dpois(1, round(N/10))
+    Z <- S <- p <- lam <- rep(NA, nsteps)
+    S[1] <- N - Z_0
+    lam[1] <- beta * Z_0 * S[1] / N
+    p[1] <- r/(r+lam[1]) 
+    Z[1] <- rnbinom(1, size=p[1], prob=r)
+    for(t in 2:nsteps){
+        S[t] <- S[t-1] - Z[t-1]
+        lam[t] <- beta * Z[t-1] * S[t] / N
+        p[t] <- r/(r+lam[t]) 
+        Z[t] <- rnbinom(1, size=p[t], prob=r)
+    }
+    plot(Z)
+    return(Z)
+}
+tsir_sim(beta=2, r=0.5, N=10000, nsteps=104)
+```
+
+## Open questions
+
+ - If we simulate from a real SIR model, does this simple model fit the data ok? What essential features of the data does this capture?
+ - Is the fitting dependent on a system starting from a relatively naive state, with little prevailing immunity? Seems like that state is implicit in the `S[1] <- N - Z_0` statement.
+ - We could try simulating and estimating datasets where we vary the following features to see how they impact estimation: (1) $S_0/N$   , (2) $N$, (3) $\mathbb E \left [ \sum_t Z_t \right] $.
+ - Add a version of sim_tsir with noise
+
+## A better simple simulation
+```{r}
+sample.z = sim_tsir_simple(pop = 3.5e6, 
+                           r.init = 0, 
+                           z.init = 10, 
+                           beta = 1.5, 
+                           p.obs = 0.2, 
+                           ntimes=52)
+plot(sample.z$obs)
+sum(sample.z$obs)/sample.z$pop
+```
+
+```{r}
+
+test <- fit_sim_data(pop = 0.5e6, n.sim=1000, 
+                     times=create.time.ref())
+
+```
+
+

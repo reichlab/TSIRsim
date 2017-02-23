@@ -1,0 +1,32 @@
+model {
+
+  ### observation model
+  p_obs ~ dunif(0.001, 0.10) # prob. of an infection being observed
+  for (t in 1:T) {
+    obs.inf[t] ~ dbinom(p_obs * p_Z[t], pop)
+    samp.obs.inf[t] ~ dbinom(p_obs * p_Z[t], pop)
+  }
+    
+  ### TSIR model
+  beta ~ dgamma(0.001, 0.001)
+  r ~ dgamma(0.001, 0.001)
+  for (i in 1:3) {
+    p_init[i] ~ dbeta(1, 1)
+  }
+  init_pop ~ dmulti(p_init, pop) # S, Z, R
+  
+  p_Z[1] = init_pop[2]/pop
+  lambda[1] = beta * init_pop[2] * S[1] / pop
+  p[1] = r / (r + lambda[1])
+  S[1] = init_pop[1]
+  Z[1] ~ dnegbin(p[1], r)
+  for (t in 2:T) {
+    p_Z[t] = Z[t]/pop
+    lambda[t] = beta * Z[t-1] * S[t] / pop
+    p[t] = r / (r + lambda[t])
+    S[t] = S[t-1] - Z[t-1]
+    Z[t] ~ dnegbin(p[t], r)
+  }
+  
+}
+
